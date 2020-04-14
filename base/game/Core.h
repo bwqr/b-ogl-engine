@@ -11,12 +11,12 @@
 #include "../../objects/model/Cubemap.h"
 
 struct CoreInitInfo {
-    std::string simpleSamplerVertPath;
-    std::string simpleSamplerFragPath;
-    std::string cubemapVertPath;
-    std::string cubemapFragPath;
+    GLFWWindowManager windowManager;
+    Shader diffuseShader;
+    Shader singleColorShader;
+    Shader cubemapShader;
     std::array<std::string, 6> cubemapFaces;
-    std::vector<Model> *simpleSamplerModels;
+    std::vector<Model> *diffuseModels;
 };
 
 class Core {
@@ -56,10 +56,14 @@ private:
 
     std::chrono::high_resolution_clock::time_point lastFrameTime;
 
-    Program simpleSamplerProgram;
+    Program diffuseProgram;
 
+    Shader singleColorShader;
     Shader skyBoxShader;
     Cubemap skyBox;
+
+    float selectedModelZ;
+    Model *selectedModel = nullptr;
 
     void draw();
 
@@ -72,6 +76,8 @@ private:
     void updateCamera();
 
     void setupCamera();
+
+    void checkSelection(Model &model, const float &tBest);
 };
 
 

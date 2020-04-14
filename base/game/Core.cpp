@@ -9,7 +9,7 @@ void Core::init(const CoreInitInfo &initInfo) {
 
     initialized = true;
 
-    windowManager.init(WIDTH, HEIGHT);
+    windowManager = initInfo.windowManager;
 
     windowManager.setResizeCallback(this, (void *) resizeCallback);
     windowManager.setKeyCallback(this, (void *) keyCallback);
@@ -18,16 +18,28 @@ void Core::init(const CoreInitInfo &initInfo) {
 
     setupCamera();
 
-    simpleSamplerProgram.shader = Shader(initInfo.simpleSamplerVertPath, initInfo.simpleSamplerFragPath);
-    simpleSamplerProgram.models = initInfo.simpleSamplerModels;
+    diffuseProgram.shader = initInfo.diffuseShader;
+    diffuseProgram.models = initInfo.diffuseModels;
 
-    skyBoxShader = Shader(initInfo.cubemapVertPath, initInfo.cubemapFragPath);
+    singleColorShader = initInfo.singleColorShader;
+
+    skyBoxShader = initInfo.cubemapShader;
     skyBox = Cubemap(initInfo.cubemapFaces);
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CW);
+
+    glClearColor(0.3f, 0.7f, 0.9f, 1.0f);
+    glClearDepth(1.0);
+    glClearStencil(0);
 }
 
 void Core::mainLoop() {
@@ -60,29 +72,50 @@ void Core::mainLoop() {
 }
 
 void Core::draw() {
-    glClearColor(0.3f, 0.7f, 0.9f, 1.0f);
-    glClearDepth(1.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilMask(0xFF);
+    glEnable(GL_DEPTH_TEST);
 
-    simpleSamplerProgram.shader.useShader();
-    simpleSamplerProgram.shader.setMat4("camera.view", camera.view);
-    simpleSamplerProgram.shader.setMat4("camera.proj", camera.proj);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    if (simpleSamplerProgram.models != nullptr) {
-        for (const auto &model: *simpleSamplerProgram.models) {
-            model.draw(simpleSamplerProgram.shader);
+    glStencilMask(0x00);
+
+    diffuseProgram.shader.useShader();
+    diffuseProgram.shader.setMat4("camera.view", camera.view);
+    diffuseProgram.shader.setMat4("camera.proj", camera.proj);
+
+    selectedModelZ = FAR_VIEW;
+    selectedModel = nullptr;
+
+    if (diffuseProgram.models != nullptr) {
+        for (auto &model: *diffuseProgram.models) {
+            checkSelection(model, selectedModelZ);
+        }
+
+        for (auto &model: *diffuseProgram.models) {
+            if(selectedModel == &model) {
+                glStencilMask(0xFF);
+
+                model.draw(diffuseProgram.shader);
+
+                glStencilMask(0x00);
+            } else {
+                model.draw(diffuseProgram.shader);
+            }
         }
     }
 
-//    // change depth function so depth test passes when values are equal to depth buffer's content
-//    glDepthFunc(GL_LEQUAL);
-//    skyBoxShader.useShader();
-//    // remove translation from the view matrix
-//    skyBoxShader.setMat4("camera.view", glm::mat4(glm::mat3(camera.view)));
-//    skyBoxShader.setMat4("camera.proj", camera.proj);
-//    skyBox.draw(skyBoxShader);
-//    glDepthFunc(GL_LESS);
+    if (selectedModel != nullptr) {
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
 
+        singleColorShader.useShader();
+        singleColorShader.setMat4("camera.view", camera.view);
+        singleColorShader.setMat4("camera.proj", camera.proj);
+
+        selectedModel->drawSelection(singleColorShader);
+    }
 }
 
 void Core::destroy() {
@@ -152,4 +185,10 @@ void Core::updateCamera() {
     }
 
     camera.translate(tx, ty);
+}
+
+void Core::checkSelection(Model &model, const float &tBest) {
+    if (selectedModel == nullptr) {
+        selectedModel = &model;
+    }
 }

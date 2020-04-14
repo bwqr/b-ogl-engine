@@ -14,7 +14,6 @@ void GLFWWindowManager::init(int width, int height) {
 
     glfwMakeContextCurrent(window);
 
-    // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         Logger::error("Failed to initialize GLAD");

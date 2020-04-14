@@ -18,21 +18,21 @@ void Model::createFromPath(Model *model, const std::string &name) {
         return;
     }
 
-    for (size_t i = 0; i < scene->mNumMaterials; i++) {
-        Logger::info("MATERIAL");
-
-        aiColor4D as;
-        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, as);
-        Logger::info(scene->mMaterials[i]->GetName().C_Str());
-        std::cout << as.r << " " << as.g << " " << as.b << " " << as.a << std::endl;
-//        for (size_t j = 0; j < scene->mMaterials[i]->mNumProperties; j++) {
-//            Logger::info(scene->mMaterials[i]->mProperties[j]->mKey.data);
-//            for (size_t k = 0; k < scene->mMaterials[i]->mProperties[j]->mDataLength; k += 4) {
-//                auto data = scene->mMaterials[i]->mProperties[j]->mData;
-//            }
-//        }
-
-    }
+//    for (size_t i = 0; i < scene->mNumMaterials; i++) {
+//        Logger::info("MATERIAL");
+//
+//        aiColor4D as;
+//        scene->mMaterials[i]->Get(AI_MATKEY_COLOR_DIFFUSE, as);
+//        Logger::info(scene->mMaterials[i]->GetName().C_Str());
+//        std::cout << as.r << " " << as.g << " " << as.b << " " << as.a << std::endl;
+////        for (size_t j = 0; j < scene->mMaterials[i]->mNumProperties; j++) {
+////            Logger::info(scene->mMaterials[i]->mProperties[j]->mKey.data);
+////            for (size_t k = 0; k < scene->mMaterials[i]->mProperties[j]->mDataLength; k += 4) {
+////                auto data = scene->mMaterials[i]->mProperties[j]->mData;
+////            }
+////        }
+//
+//    }
 
     model->directory = name;
 
@@ -133,7 +133,7 @@ void Model::loadTextures(std::vector<Texture> *pTextures, aiMaterial *pMat, aiTe
         }
 
         texture.type = type;
-        texture.id = loadTextureFromFile( MODELS_DIR + directory + texture.path);
+        texture.id = loadTextureFromFile(MODELS_DIR + directory + texture.path);
 
         textures.insert(texture);
         pTextures->push_back(texture);
@@ -179,4 +179,18 @@ uint Model::loadTextureFromFile(const std::string &path) {
     stbi_image_free(data);
 
     return textureId;
+}
+
+void Model::drawSelection(const Shader &shader) {
+    auto tmpScale = scale;
+    auto tmpPos = position;
+
+    scale *= 1.05;
+//    position += 4;
+
+
+    draw(shader);
+
+    scale = tmpScale;
+    position = tmpPos;
 }

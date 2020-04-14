@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "../defs.h"
 
 Camera::Camera(const glm::vec3 &_eye, const glm::vec3 &_viewPlaneVector) {
     eye = _eye;
@@ -41,7 +42,7 @@ void Camera::translate(const float &dx, const float &dy) {
 
     glm::mat3 orientation = freeLook ? xOrientation * yOrientation : xOrientation;
 
-    eye += orientation * glm::vec3(1, 0, 0) * dx * sensitivity  + orientation * glm::vec3(0, 0, -1) * dy * sensitivity;
+    eye += orientation * glm::vec3(1, 0, 0) * dx * sensitivity + orientation * glm::vec3(0, 0, -1) * dy * sensitivity;
 
     updateUBO();
 }
@@ -62,6 +63,6 @@ void Camera::toggleFreeLook() {
 
 void Camera::updateUBO() {
     view = glm::lookAt(eye, eye + orientedViewPlaneVector, orientedUpVector);
-    proj = glm::perspective(glm::radians(60.0f), aspect, 0.1f, 100.0f);
+    proj = glm::perspective(glm::radians(60.0f), aspect, NEAR_VIEW, FAR_VIEW);
     ubo.viewProjection = proj * view;
 }

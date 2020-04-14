@@ -3,12 +3,19 @@
 
 
 Application::Application() {
+    GLFWWindowManager windowManager;
+    windowManager.init(WIDTH, HEIGHT);
+
     CoreInitInfo coreInitInfo = {};
-    coreInitInfo.simpleSamplerVertPath = std::string(SHADERS_DIR) + "simpleDiffuse.vert";
-    coreInitInfo.simpleSamplerFragPath = std::string(SHADERS_DIR) + "simpleDiffuse.frag";
-    coreInitInfo.simpleSamplerModels = &models;
-    coreInitInfo.cubemapVertPath = std::string(SHADERS_DIR) + "scene.vert";
-    coreInitInfo.cubemapFragPath = std::string(SHADERS_DIR) + "scene.frag";
+    coreInitInfo.windowManager = windowManager;
+
+    coreInitInfo.diffuseShader = Shader(SHADERS_DIR + "simpleDiffuse.vert", SHADERS_DIR + "simpleDiffuse.frag");
+    coreInitInfo.diffuseModels = &models;
+
+    coreInitInfo.cubemapShader = Shader(SHADERS_DIR + "scene.vert", SHADERS_DIR + "scene.frag");
+
+    coreInitInfo.singleColorShader = Shader(SHADERS_DIR + "singleColor.vert", SHADERS_DIR + "singleColor.frag");
+
     coreInitInfo.cubemapFaces = {
             std::string(TEXTURES_DIR) + "skybox/right.jpg",
             std::string(TEXTURES_DIR) + "skybox/left.jpg",

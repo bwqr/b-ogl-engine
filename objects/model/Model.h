@@ -31,10 +31,14 @@ public:
 
     void draw(const Shader &shader) const;
 
+    void drawSelection(const Shader &shader);
+
 private:
     std::string directory;
 
     std::vector<Mesh> meshes;
+
+    bool selected = false;
 
     void processNode(aiNode *pNode, const aiScene *pScene);
 
