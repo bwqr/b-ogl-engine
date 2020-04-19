@@ -59,7 +59,7 @@ public:
 
     void drawHighlighted(const Shader &shader);
 
-    void drawCollisionBox(const Shader &shader);
+    void drawCollisionBox(const Shader &shader) const;
 
     bool intersect(IntersectionRecord *record, Ray ray, const float &tBest);
 

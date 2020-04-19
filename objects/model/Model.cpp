@@ -1,4 +1,3 @@
-#include <chrono>
 #include "Model.h"
 
 
@@ -175,23 +174,18 @@ glm::fquat Model::quaternionRotation(const glm::fquat &quat, glm::vec3 axis, con
     return quat * offset;
 }
 
-void Model::drawCollisionBox(const Shader &shader) {
-    auto tmpScale = size;
-    auto tmpPosition = position;
-    size *= (collisionBox[1] - collisionBox[0]) / 2.0f;
-    position += tmpScale * (collisionBox[1] + collisionBox[0]) / 2.0f;
+void Model::drawCollisionBox(const Shader &shader) const {
+    auto tmpSize = size * (collisionBox[1] - collisionBox[0]) / 2.0f;
+    auto tmpPosition = position + size * (collisionBox[1] + collisionBox[0]) / 2.0f;
 
     auto model = orientation;
 
-    model = glm::translate(glm::mat4(1.0f), position) * model;
+    model = glm::translate(glm::mat4(1.0f), tmpPosition) * model;
 
-    model = glm::scale(model, size);
+    model = glm::scale(model, tmpSize);
 
     shader.setMat4("model", model);
 
     cubeMesh.draw(shader);
-
-    size = tmpScale;
-    position = tmpPosition;
 }
 

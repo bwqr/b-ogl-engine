@@ -121,7 +121,7 @@ void Core::draw() {
         modelHighlight.shader.useShader();
         modelHighlight.shader.setMat4("camera", camera.getViewProjectionMatrix());
 
-        modelHighlight.model->drawHighlighted(modelHighlight.shader);
+        modelHighlight.model->drawCollisionBox(modelHighlight.shader);
     }
 
     //Overlay
