@@ -20,6 +20,8 @@ public:
 
     virtual void setCursorPosCallback(void *application, void *callback) = 0;
 
+    virtual void setMouseButtonCallback(void *application, void *callback) = 0;
+
     virtual void getCursorPos(double *xpos, double *ypos) = 0;
 
     virtual void pollEvents() = 0;

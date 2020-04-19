@@ -1,5 +1,6 @@
 #include "Core.h"
 
+
 void Core::init(const CoreInitInfo &initInfo) {
     if (initialized) {
         Logger::error("core is already initialized", Logger::CORE_INIT_FAILED);
@@ -9,22 +10,31 @@ void Core::init(const CoreInitInfo &initInfo) {
 
     initialized = true;
 
+    //WindowManager configuration
+
     windowManager = initInfo.windowManager;
 
-    windowManager.setResizeCallback(this, (void *) resizeCallback);
-    windowManager.setKeyCallback(this, (void *) keyCallback);
+    windowManager.setResizeCallback(this, (void *) WindowHandler::resizeCallback);
+    windowManager.setKeyCallback(this, (void *) WindowHandler::keyCallback);
     windowManager.getCursorPos(&cursor.xpos, &cursor.ypos);
-    windowManager.setCursorPosCallback(this, (void *) cursorPosCallback);
+    windowManager.setCursorPosCallback(this, (void *) WindowHandler::cursorPosCallback);
+    windowManager.setMouseButtonCallback(this, (void *) WindowHandler::mouseButtonCallback);
 
     setupCamera();
+
+    //Programs configuration
 
     diffuseProgram.shader = initInfo.diffuseShader;
     diffuseProgram.models = initInfo.diffuseModels;
 
     singleColorShader = initInfo.singleColorShader;
+    singleColorShader.useShader();
+    singleColorShader.setVec4("color", modelHighlight.highlightColor);
 
     skyBoxShader = initInfo.cubemapShader;
     skyBox = Cubemap(initInfo.cubemapFaces);
+
+    //GL configuration
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -40,34 +50,30 @@ void Core::init(const CoreInitInfo &initInfo) {
     glClearColor(0.3f, 0.7f, 0.9f, 1.0f);
     glClearDepth(1.0);
     glClearStencil(0);
+
+    //FrameTiming initialization
+    frameTiming.startTime = std::chrono::high_resolution_clock::now();
+
+    //Overlay Initialization
+    ImGuiOverlayInitInfo overlayInitInfo = {};
+    overlayInitInfo.window = windowManager.window;
+    overlay.init(overlayInitInfo);
+    findAllModelsInPath();
 }
 
 void Core::mainLoop() {
     while (!windowManager.shouldClose()) {
-        windowManager.pollEvents();
+        processKeyInputs();
 
-        static int fps = 0;
+        calculateFrameTiming();
 
-        static auto startTime = std::chrono::high_resolution_clock::now();
-
-        auto currentTime = std::chrono::high_resolution_clock::now();
-
-        if (std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count() > 1) {
-            std::cout << fps << std::endl;
-            startTime = currentTime;
-            fps = 0;
+        if (options.scene.update) {
+            updateScene();
         }
-
-        fps++;
-
-        updateCamera();
 
         draw();
 
-        frameTimeDifference = std::chrono::duration<float, std::chrono::seconds::period>(
-                currentTime - lastFrameTime).count();
-
-        lastFrameTime = currentTime;
+        windowManager.pollEvents();
     }
 }
 
@@ -81,19 +87,22 @@ void Core::draw() {
     glStencilMask(0x00);
 
     diffuseProgram.shader.useShader();
-    diffuseProgram.shader.setMat4("camera.view", camera.view);
-    diffuseProgram.shader.setMat4("camera.proj", camera.proj);
-
-    selectedModelZ = FAR_VIEW;
-    selectedModel = nullptr;
+    diffuseProgram.shader.setMat4("camera", camera.getViewProjectionMatrix());
 
     if (diffuseProgram.models != nullptr) {
-        for (auto &model: *diffuseProgram.models) {
-            checkSelection(model, selectedModelZ);
+        if (!modelHighlight.selected) {
+            modelHighlight.t = FAR_VIEW;
+            modelHighlight.model = nullptr;
+
+            Ray cameraCenterRay = camera.generateRay(cursor.xpos / windowExtent.width,
+                                                     (windowExtent.height - cursor.ypos) / windowExtent.height);
+            for (auto &model: *diffuseProgram.models) {
+                checkSelection(model, cameraCenterRay);
+            }
         }
 
         for (auto &model: *diffuseProgram.models) {
-            if(selectedModel == &model) {
+            if (modelHighlight.model == &model) {
                 glStencilMask(0xFF);
 
                 model.draw(diffuseProgram.shader);
@@ -105,90 +114,108 @@ void Core::draw() {
         }
     }
 
-    if (selectedModel != nullptr) {
+    //Overlay
+    overlay.prepare();
+
+    overlay.drawModelsList(&options.overlay.drawModelsList, overlayModels, [=](size_t selected) {
+        diffuseProgram.models->emplace_back();
+        auto &model = (*diffuseProgram.models)[diffuseProgram.models->size() - 1];
+        Model::createFromPath(&model, overlayModels[selected]);
+    });
+
+    if (modelHighlight.model != nullptr) {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
         glDisable(GL_DEPTH_TEST);
 
         singleColorShader.useShader();
-        singleColorShader.setMat4("camera.view", camera.view);
-        singleColorShader.setMat4("camera.proj", camera.proj);
+        singleColorShader.setMat4("camera", camera.getViewProjectionMatrix());
 
-        selectedModel->drawSelection(singleColorShader);
+        if (modelHighlight.selected && options.overlay.drawEditModel) {
+            modelHighlight.model->createEditOverlay(&options.overlay.drawEditModel);
+        }
+
+        modelHighlight.model->drawHighlighted(singleColorShader);
     }
+
+    if (options.overlay.drawDemoWindow) {
+        overlay.drawDemoWindow(&options.overlay.drawDemoWindow);
+    }
+
+    overlay.draw();
 }
 
 void Core::destroy() {
-    windowManager.destroy();
-}
-
-void Core::resizeCallback(GLFWwindow *window, int width, int height) {
-    auto app = reinterpret_cast<Core *>(glfwGetWindowUserPointer(window));
-
-    app->windowExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-
-    app->camera.resizeCallback(app->windowExtent);
-
-    glViewport(0, 0, width, height);
-}
-
-void Core::keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-    auto app = reinterpret_cast<Core *>(glfwGetWindowUserPointer(window));
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        app->windowManager.close();
-    } else if (key == GLFW_KEY_D) {
-        app->cameraXPlusMove = (action & (GLFW_PRESS | GLFW_REPEAT)) != 0;
-    } else if (key == GLFW_KEY_A) {
-        app->cameraXNegMove = (action & (GLFW_PRESS | GLFW_REPEAT)) != 0;
-    } else if (key == GLFW_KEY_W) {
-        app->cameraYPlusMove = (action & (GLFW_PRESS | GLFW_REPEAT)) != 0;
-    } else if (key == GLFW_KEY_S) {
-        app->cameraYNegMove = (action & (GLFW_PRESS | GLFW_REPEAT)) != 0;
-    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        app->camera.toggleFreeLook();
-    }
-}
-
-void Core::cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-    auto app = reinterpret_cast<Core *>(glfwGetWindowUserPointer(window));
-
-    auto &cursor = app->cursor;
-
-    cursor.dx = xpos - cursor.xpos;
-    cursor.dy = ypos - cursor.ypos;
-
-    cursor.xpos = xpos;
-    cursor.ypos = ypos;
-
-    app->camera.rotate(cursor.dx / app->windowExtent.width, cursor.dy / app->windowExtent.height);
+    overlay.destroy();
 }
 
 void Core::setupCamera() {
-    camera = Camera({0, 5, 10.0}, {0, -5, -10});
+    camera = Camera({0, 0, 10.0}, {0, 0, -10});
     camera.rotate(0, 0);
 }
 
-void Core::updateCamera() {
+void Core::updateScene() {
     float tx = 0, ty = 0;
-    float k = 2. * frameTimeDifference;
-    if (cameraXPlusMove) {
+    float k = 2.f * frameTiming.timeDiff;
+    if (options.camera.cameraXPlusMove) {
         tx = k;
-    } else if (cameraXNegMove) {
+    } else if (options.camera.cameraXNegMove) {
         tx = -k;
     }
 
-    if (cameraYPlusMove) {
+    if (options.camera.cameraYPlusMove) {
         ty = k;
-    } else if (cameraYNegMove) {
+    } else if (options.camera.cameraYNegMove) {
         ty = -k;
     }
 
     camera.translate(tx, ty);
+
+    if (modelHighlight.selected) {
+        modelHighlight.model->translate(camera.getTranslateDirection(tx, ty));
+    }
 }
 
-void Core::checkSelection(Model &model, const float &tBest) {
-    if (selectedModel == nullptr) {
-        selectedModel = &model;
+void Core::checkSelection(Model &model, const Ray &ray) {
+    IntersectionRecord record = {};
+
+    if (model.intersect(&record, ray, modelHighlight.t)) {
+        modelHighlight.model = &model;
+        modelHighlight.t = record.t;
     }
+}
+
+void Core::processKeyInputs() {
+
+    options.camera.cameraXPlusMove = glfwGetKey(windowManager.window, GLFW_KEY_D) == GLFW_PRESS;
+    options.camera.cameraXNegMove = glfwGetKey(windowManager.window, GLFW_KEY_A) == GLFW_PRESS;
+    options.camera.cameraYPlusMove = glfwGetKey(windowManager.window, GLFW_KEY_W) == GLFW_PRESS;
+    options.camera.cameraYNegMove = glfwGetKey(windowManager.window, GLFW_KEY_S) == GLFW_PRESS;
+}
+
+void Core::findAllModelsInPath() {
+    for (const auto &entry: std::filesystem::directory_iterator(MODELS_DIR)) {
+        if (entry.is_directory()) {
+            overlayModels.push_back(entry.path().filename());
+        }
+    }
+}
+
+void Core::calculateFrameTiming() {
+    auto currentTime = std::chrono::high_resolution_clock::now();
+
+    if (std::chrono::duration<float, std::chrono::seconds::period>
+                (currentTime - frameTiming.startTime).count() > 1) {
+
+        Logger::info(std::string("fps: ") + std::to_string(frameTiming.fps));
+        frameTiming.startTime = currentTime;
+        frameTiming.fps = 0;
+    }
+
+    frameTiming.fps++;
+
+    frameTiming.timeDiff = std::chrono::duration<float, std::chrono::seconds::period>(
+            currentTime - frameTiming.prevTime).count();
+
+    frameTiming.prevTime = currentTime;
 }

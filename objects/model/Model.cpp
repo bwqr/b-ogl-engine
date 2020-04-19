@@ -5,6 +5,8 @@
 
 #include "../../thirdparty/stb/stb_image.h"
 
+int Model::totalCreation = 0;
+
 void Model::createFromPath(Model *model, const std::string &name) {
 
     Assimp::Importer assimpImporter;
@@ -35,7 +37,6 @@ void Model::createFromPath(Model *model, const std::string &name) {
 //    }
 
     model->directory = name;
-
     model->processNode(scene->mRootNode, scene);
 }
 
@@ -51,7 +52,7 @@ void Model::draw(const Shader &shader) const {
                                 currentTime - startTime).count() * glm::radians(0.0f),
                         glm::vec3(1, 0, 0));
 
-    model = glm::scale(model, scale);
+    model = glm::scale(model, size);
 
     shader.setMat4("model", model);
 
@@ -110,7 +111,6 @@ void Model::processMesh(aiMesh *pMesh, const aiScene *pScene) {
     pMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, val);
 
     mesh.diffuseMaterial.value = {val.r, val.g, val.b, val.a};
-//    mesh.diffuseMaterial.value = {0, 0, 0, 0};
 
     loadTextures(&mesh.textures, pMaterial, aiTextureType_DIFFUSE, Texture::DIFFUSE_TEXTURE);
 
@@ -181,16 +181,95 @@ uint Model::loadTextureFromFile(const std::string &path) {
     return textureId;
 }
 
-void Model::drawSelection(const Shader &shader) {
-    auto tmpScale = scale;
-    auto tmpPos = position;
-
-    scale *= 1.05;
-//    position += 4;
-
+void Model::drawHighlighted(const Shader &shader) {
+    auto tmpScale = size;
+    size *= 1.05;
 
     draw(shader);
 
-    scale = tmpScale;
-    position = tmpPos;
+    size = tmpScale;
+}
+
+bool Model::intersect(IntersectionRecord *record, const Ray &ray, const float &tBest) {
+    float tmin, tmax, tymin, tymax, tzmin, tzmax;
+
+    glm::vec3 bounds[2] = {position - 1.f * size,
+                           position + 1.f * size};
+
+    tmin = (bounds[ray.sign[0]].x - ray.point.x) * ray.invdir.x;
+    tmax = (bounds[1 - ray.sign[0]].x - ray.point.x) * ray.invdir.x;
+    tymin = (bounds[ray.sign[1]].y - ray.point.y) * ray.invdir.y;
+    tymax = (bounds[1 - ray.sign[1]].y - ray.point.y) * ray.invdir.y;
+
+    if ((tmin > tymax) || (tymin > tmax)) {
+        return false;
+    }
+    if (tymin > tmin) {
+        tmin = tymin;
+    }
+    if (tymax < tmax) {
+        tmax = tymax;
+    }
+
+    tzmin = (bounds[ray.sign[2]].z - ray.point.z) * ray.invdir.z;
+    tzmax = (bounds[1 - ray.sign[2]].z - ray.point.z) * ray.invdir.z;
+
+    if ((tmin > tzmax) || (tzmin > tmax)) {
+        return false;
+    }
+
+    if (tzmin > tmin) {
+        tmin = tzmin;
+    }
+    if (tzmax < tmax) {
+        tmax = tzmax;
+    }
+
+    record->t = tmin;
+
+    return tmin < tBest;
+}
+
+void Model::rotate(const float &dx, const float &dy) {
+    // NOT IMPLEMENTED
+}
+
+void Model::translate(const glm::vec3 &direction) {
+    position += direction;
+}
+
+void Model::scale(const float &s) {
+    size *= s;
+}
+
+void Model::scale(const glm::vec3 &sv) {
+    size *= sv;
+}
+
+void Model::createEditOverlay(bool *p_open) {
+    ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Model Edit", p_open, ImGuiWindowFlags_MenuBar)) {
+        ImGui::BeginChild("Position", ImVec2(300, 0), true);
+        ImGui::InputFloat("Position x", &position.x, 0.01f, 1.0f, "%.3f");
+        ImGui::InputFloat("Position y", &position.y, 0.01f, 1.0f, "%.3f");
+        ImGui::InputFloat("Position z", &position.z, 0.01f, 1.0f, "%.3f");
+        ImGui::EndChild();
+
+        ImGui::BeginChild("Position", ImVec2(300, 0), true);
+        ImGui::InputFloat("Size x", &size.x, 0.01f, 1.0f, "%.3f");
+        ImGui::InputFloat("Size y", &size.y, 0.01f, 1.0f, "%.3f");
+        ImGui::InputFloat("Size z", &size.z, 0.01f, 1.0f, "%.3f");
+        ImGui::EndChild();
+    }
+
+    ImGui::End();
+}
+
+std::string Model::dump() const {
+
+    std::string result = directory + " " + std::to_string(position.x) + " " + std::to_string(position.y) + " "
+                         + std::to_string(position.z) + " " + std::to_string(size.x) + " "
+                         + std::to_string(size.y) + " " + std::to_string(size.z);
+    return result;
 }

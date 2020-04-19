@@ -38,11 +38,8 @@ void Camera::rotate(const float &dx, const float &dy) {
 }
 
 void Camera::translate(const float &dx, const float &dy) {
-    float sensitivity = 1.7;
 
-    glm::mat3 orientation = freeLook ? xOrientation * yOrientation : xOrientation;
-
-    eye += orientation * glm::vec3(1, 0, 0) * dx * sensitivity + orientation * glm::vec3(0, 0, -1) * dy * sensitivity;
+    eye += getTranslateDirection(dx, dy);
 
     updateUBO();
 }
@@ -63,6 +60,35 @@ void Camera::toggleFreeLook() {
 
 void Camera::updateUBO() {
     view = glm::lookAt(eye, eye + orientedViewPlaneVector, orientedUpVector);
-    proj = glm::perspective(glm::radians(60.0f), aspect, NEAR_VIEW, FAR_VIEW);
-    ubo.viewProjection = proj * view;
+    proj = glm::perspective(glm::radians(fovy), aspect, NEAR_VIEW, FAR_VIEW);
+}
+
+Ray Camera::getCenterRay() {
+    return {eye + orientedViewPlaneVector, orientedViewPlaneVector};
+}
+
+glm::vec3 Camera::getTranslateDirection(const float &dx, const float &dy) {
+    glm::mat3 orientation = freeLook ? xOrientation * yOrientation : xOrientation;
+
+    return orientation * glm::vec3(1, 0, 0) * dx * translateSensitivity +
+           orientation * glm::vec3(0, 0, -1) * dy * translateSensitivity;
+}
+
+glm::mat4 Camera::getViewProjectionMatrix() {
+    return proj * view;
+}
+
+Ray Camera::generateRay(float u, float v) {
+
+    float a = glm::length(viewPlaneVector);
+
+    float b = a * std::sin(glm::radians(fovy) / 2) / std::cos(glm::radians(fovy) / 2);
+
+    auto yDir = b * glm::normalize(orientedUpVector) * 2.0f;
+
+    auto xDir = b * aspect * glm::normalize(glm::cross(orientedViewPlaneVector, orientedUpVector)) * 2.0f;
+
+    glm::vec3 pointInWorldSpace = eye + orientedViewPlaneVector + yDir * (v - .5f) + xDir * (u - .5f);
+
+    return {pointInWorldSpace, pointInWorldSpace - eye};
 }

@@ -23,9 +23,12 @@ b-ogl-engine.cbp
 #Visuals
 visual/models
 visual/textures
-inputs
+io
+
 #thirdparty
 thirdparty/stb
+thirdparty/imgui
+imgui.ini
 
 #macOS
 .DS_Store

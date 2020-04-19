@@ -57,8 +57,6 @@ void GLFWWindowManager::setKeyCallback(void *application, void *callback) {
 }
 
 void GLFWWindowManager::setCursorPosCallback(void *application, void *callback) {
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
     glfwSetWindowUserPointer(window, application);
 
     glfwSetCursorPosCallback(window, (GLFWcursorposfun) callback);
@@ -71,4 +69,10 @@ void GLFWWindowManager::getCursorPos(double *xpos, double *ypos) {
 void GLFWWindowManager::destroy() {
     glfwDestroyWindow(window);
     glfwTerminate();
+}
+
+void GLFWWindowManager::setMouseButtonCallback(void *application, void *callback) {
+    glfwSetWindowUserPointer(window, application);
+
+    glfwSetMouseButtonCallback(window, (GLFWmousebuttonfun) callback);
 }

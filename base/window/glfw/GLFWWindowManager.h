@@ -35,6 +35,8 @@ public:
 
     void setCursorPosCallback(void *application, void *callback) override;
 
+    void setMouseButtonCallback(void *application, void *callback);
+
     void getCursorPos(double *xpos, double *ypos) override;
 
     std::vector<const char *> getRequiredInstanceExtensions() override;

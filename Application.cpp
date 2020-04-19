@@ -3,7 +3,6 @@
 
 
 Application::Application() {
-    GLFWWindowManager windowManager;
     windowManager.init(WIDTH, HEIGHT);
 
     CoreInitInfo coreInitInfo = {};
@@ -32,6 +31,7 @@ Application::Application() {
 
 Application::~Application() {
     gameCore.destroy();
+    windowManager.destroy();
 }
 
 void Application::start() {
@@ -43,17 +43,18 @@ void Application::loadModels() {
 
     std::string name;
     float x, y, z, sx, sy, sz;
-    while (!istream.eof()) {
+    int num;
+    istream >> num;
+    for (size_t i = 0; i < num; i++) {
 
         istream >> name >> x >> y >> z >> sx >> sy >> sz;
 
         models.emplace_back();
         auto &model = models[models.size() - 1];
-
         Model::createFromPath(&model, name);
 
-        model.position = {x, y, z};
-        model.scale = {sx, sy, sz};
+        model.translate({x, y, z});
+        model.scale({sx, sy, sz});
     }
 }
 

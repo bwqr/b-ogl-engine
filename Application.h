@@ -12,6 +12,7 @@ public:
     ~Application();
     void start();
 private:
+    GLFWWindowManager windowManager;
     Core gameCore;
 
     std::vector<Model> models;
