@@ -10,8 +10,6 @@ void Model::ModelHandler::processMesh(Mesh *mesh, aiMesh *aiMesh, const aiScene 
 
         auto &vertex = mesh->vertices[mesh->vertices.size() - 1];
 
-        glm::vec3 vec;
-
         vertex.position = {aiMesh->mVertices[i].x, aiMesh->mVertices[i].y, aiMesh->mVertices[i].z};
 
         model->collisionBox[0].x = std::min(model->collisionBox[0].x, vertex.position.x);
@@ -150,4 +148,74 @@ void Model::ModelHandler::loadFromPath(Model *model, const std::string &name) {
 
     model->directory = name;
     model->modelHandler.processNode(scene->mRootNode, scene);
+
+    if (cubeMesh.vertices.size() > 0) {
+        return;
+    }
+
+    Mesh mesh;
+
+    float vertices[6 * 6 * 3] = {
+            // positions
+            -1.0f, 1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            -1.0f, 1.0f, -1.0f,
+            1.0f, 1.0f, -1.0f,
+
+            -1.0f, -1.0f, 1.0f,
+            -1.0f, 1.0f, -1.0f,
+            -1.0f, -1.0f, -1.0f,
+
+            -1.0f, 1.0f, -1.0f,
+            -1.0f, -1.0f, 1.0f,
+            -1.0f, 1.0f, 1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, -1.0f, 1.0f,
+
+            1.0f, 1.0f, 1.0f,
+            1.0f, -1.0f, -1.0f,
+            1.0f, 1.0f, -1.0f,
+
+            -1.0f, -1.0f, 1.0f,
+            1.0f, 1.0f, 1.0f,
+            -1.0f, 1.0f, 1.0f,
+
+            1.0f, 1.0f, 1.0f,
+            -1.0f, -1.0f, 1.0f,
+            1.0f, -1.0f, 1.0f,
+
+            -1.0f, 1.0f, -1.0f,
+            1.0f, 1.0f, 1.0f,
+            1.0f, 1.0f, -1.0f,
+
+            1.0f, 1.0f, 1.0f,
+            -1.0f, 1.0f, -1.0f,
+            -1.0f, 1.0f, 1.0f,
+
+            -1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, -1.0f,
+            -1.0f, -1.0f, 1.0f,
+
+            1.0f, -1.0f, -1.0f,
+            1.0f, -1.0f, 1.0f,
+            -1.0f, -1.0f, 1.0f,
+    };
+
+    for (size_t i = 0; i < sizeof(vertices) / sizeof(float); i += 3) {
+        Vertex vert = {};
+        vert.position = {vertices[i], vertices[i + 1], vertices[i + 2]};
+        mesh.vertices.push_back(vert);
+        mesh.indices.push_back(i);
+        mesh.indices.push_back(i + 1);
+        mesh.indices.push_back(i + 2);
+    }
+
+    mesh.build();
+
+    cubeMesh = mesh;
 }

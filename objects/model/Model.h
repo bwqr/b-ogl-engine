@@ -59,7 +59,9 @@ public:
 
     void drawHighlighted(const Shader &shader);
 
-    bool intersect(IntersectionRecord *record, const Ray &ray, const float &tBest);
+    void drawCollisionBox(const Shader &shader);
+
+    bool intersect(IntersectionRecord *record, Ray ray, const float &tBest);
 
     void rotate(const float &dx, const float &dy, const float &dz);
 
@@ -74,11 +76,12 @@ public:
     std::string dump() const;
 
 private:
+    static Mesh cubeMesh;
+
     ModelHandler modelHandler;
 
-    glm::mat4 xOrientation = {};
-    glm::mat4 yOrientation = {};
-    glm::mat4 zOrientation = {};
+    glm::mat4 orientation = {};
+    glm::mat4 inverseOrientation = {};
 
     glm::vec3 position = {0, 0, 0};
     glm::vec3 size = {1, 1, 1};
@@ -88,7 +91,7 @@ private:
     float pitch = 0;
 
     std::array<glm::vec3, 2> collisionBox = {glm::vec3(0, 0, 0),
-                                             glm::vec3(0,  0,  0)};
+                                             glm::vec3(0, 0, 0)};
 
     std::vector<Mesh> meshes;
 

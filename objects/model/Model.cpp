@@ -4,12 +4,10 @@
 
 int Model::totalCreation = 0;
 
+Mesh Model::cubeMesh;
+
 void Model::draw(const Shader &shader) const {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-
-    auto model = xOrientation * yOrientation * zOrientation;
+    auto model = orientation;
 
     model = glm::translate(glm::mat4(1.0f), position) * model;
 
@@ -24,18 +22,31 @@ void Model::draw(const Shader &shader) const {
 
 void Model::drawHighlighted(const Shader &shader) {
     auto tmpScale = size;
-    size *= 1.05;
+
+    size *= 1.05f;
 
     draw(shader);
 
     size = tmpScale;
 }
 
-bool Model::intersect(IntersectionRecord *record, const Ray &ray, const float &tBest) {
+bool Model::intersect(IntersectionRecord *record, Ray ray, const float &tBest) {
     float tmin, tmax, tymin, tymax, tzmin, tzmax;
 
-    glm::vec3 bounds[2] = {position + collisionBox[0] * size,
-                           position + collisionBox[1] * size};
+    auto rot = glm::mat3(inverseOrientation);
+
+    //Bring ray into model space
+    ray.point = ray.point - position;
+
+    //Apply inverse rotation
+    ray.point = rot * ray.point;
+    ray.direction = rot * ray.direction;
+
+    //Reconstruct the ray
+    ray = {ray.point, ray.direction};
+
+    glm::vec3 bounds[2] = {collisionBox[0] * size,
+                           collisionBox[1] * size};
 
     tmin = (bounds[ray.sign[0]].x - ray.point.x) * ray.invdir.x;
     tmax = (bounds[1 - ray.sign[0]].x - ray.point.x) * ray.invdir.x;
@@ -94,13 +105,15 @@ void Model::rotate(const float &dx, const float &dy, const float &dz) {
         pitch = std::modf(pitch + dz, &intpart) + static_cast<int>(intpart) % 360;
     }
 
-    xOrientation = glm::mat3_cast(
+    auto xOrientation = glm::mat3_cast(
             quaternionRotation(baseOrientation, {1, 0, 0}, glm::radians(roll) / 2));
-    yOrientation = glm::mat3_cast(
+    auto yOrientation = glm::mat3_cast(
             quaternionRotation(baseOrientation, {0, 1, 0}, glm::radians(yaw) / 2));
-    zOrientation = glm::mat3_cast(
+    auto zOrientation = glm::mat3_cast(
             quaternionRotation(baseOrientation, {0, 0, 1}, glm::radians(pitch) / 2));
 
+    orientation = xOrientation * yOrientation * zOrientation;
+    inverseOrientation = glm::inverse(orientation);
 }
 
 void Model::translate(const glm::vec3 &direction) {
@@ -160,5 +173,25 @@ glm::fquat Model::quaternionRotation(const glm::fquat &quat, glm::vec3 axis, con
     glm::fquat offset(scalar, axis.x, axis.y, axis.z);
 
     return quat * offset;
+}
+
+void Model::drawCollisionBox(const Shader &shader) {
+    auto tmpScale = size;
+    auto tmpPosition = position;
+    size *= (collisionBox[1] - collisionBox[0]) / 2.0f;
+    position += tmpScale * (collisionBox[1] + collisionBox[0]) / 2.0f;
+
+    auto model = orientation;
+
+    model = glm::translate(glm::mat4(1.0f), position) * model;
+
+    model = glm::scale(model, size);
+
+    shader.setMat4("model", model);
+
+    cubeMesh.draw(shader);
+
+    size = tmpScale;
+    position = tmpPosition;
 }
 

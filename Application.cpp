@@ -13,7 +13,7 @@ Application::Application() {
 
     coreInitInfo.cubemapShader = Shader(SHADERS_DIR + "scene.vert", SHADERS_DIR + "scene.frag");
 
-    coreInitInfo.singleColorShader = Shader(SHADERS_DIR + "singleColor.vert", SHADERS_DIR + "singleColor.frag");
+    coreInitInfo.singleColorShader = Shader(SHADERS_DIR + "debug.vert", SHADERS_DIR + "debug.frag");
 
     coreInitInfo.cubemapFaces = {
             std::string(TEXTURES_DIR) + "skybox/right.jpg",

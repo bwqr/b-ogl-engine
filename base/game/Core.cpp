@@ -93,35 +93,24 @@ void Core::draw() {
         if (!modelHighlight.selected) {
             modelHighlight.clear();
 
-            Ray cameraCenterRay = camera.generateRay(cursor.xpos / windowExtent.width,
+            Ray ray = camera.generateRay(cursor.xpos / windowExtent.width,
                                                      (windowExtent.height - cursor.ypos) / windowExtent.height);
             for (auto &model: *diffuseProgram.models) {
-                checkSelection(model, cameraCenterRay);
+                checkSelection(model, ray);
             }
         }
 
         for (auto &model: *diffuseProgram.models) {
             if (modelHighlight.model == &model) {
-                glStencilMask(0xFF);
+//                glStencilMask(0xFF);
 
                 model.draw(diffuseProgram.shader);
 
-                glStencilMask(0x00);
+//                glStencilMask(0x00);
             } else {
                 model.draw(diffuseProgram.shader);
             }
         }
-    }
-
-    //Overlay
-    overlay.prepare();
-
-    if (options.overlay.drawModelsListWindow) {
-        overlay.drawModelsList(&options.overlay.drawModelsListWindow, overlayModels, [=](size_t selected) {
-            diffuseProgram.models->emplace_back();
-            auto &model = (*diffuseProgram.models)[diffuseProgram.models->size() - 1];
-            Model::ModelHandler::loadFromPath(&model, overlayModels[selected]);
-        });
     }
 
     if (modelHighlight.highlighted()) {
@@ -132,11 +121,23 @@ void Core::draw() {
         modelHighlight.shader.useShader();
         modelHighlight.shader.setMat4("camera", camera.getViewProjectionMatrix());
 
-        if (modelHighlight.selected && options.overlay.drawEditModelWindow) {
-            modelHighlight.model->createEditOverlay(&options.overlay.drawEditModelWindow);
-        }
-
         modelHighlight.model->drawHighlighted(modelHighlight.shader);
+    }
+
+    //Overlay
+    overlay.prepare();
+
+    if (options.overlay.drawModelsListWindow) {
+        overlay.drawModelsList(&options.overlay.drawModelsListWindow, overlayModels, [=](size_t selected) {
+            diffuseProgram.models->emplace_back();
+            auto &model = (*diffuseProgram.models)[diffuseProgram.models->size() - 1];
+            Model::ModelHandler::loadFromPath(&model, overlayModels[selected]);
+            model.rotate(0, 0, 0);
+        });
+    }
+
+    if (modelHighlight.selected && options.overlay.drawEditModelWindow) {
+        modelHighlight.model->createEditOverlay(&options.overlay.drawEditModelWindow);
     }
 
     if (options.overlay.drawDemoWindow) {

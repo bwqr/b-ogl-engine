@@ -54,10 +54,10 @@ private:
     };
 
     struct OverlayOptions {
-        bool drawModelsListWindow = true;
+        bool drawModelsListWindow = false;
         bool drawDemoWindow = false;
         bool drawEditModelWindow = true;
-        bool drawOptionsWindow = true;
+        bool drawOptionsWindow = false;
     };
 
     struct {

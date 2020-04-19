@@ -82,7 +82,9 @@ Ray Camera::generateRay(float u, float v) {
 
     float a = glm::length(viewPlaneVector);
 
-    float b = a * std::sin(glm::radians(fovy) / 2) / std::cos(glm::radians(fovy) / 2);
+    auto halfFovy = glm::radians(fovy) / 2;
+
+    float b = a * std::sin(halfFovy) / std::cos(halfFovy);
 
     auto yDir = b * glm::normalize(orientedUpVector) * 2.0f;
 
