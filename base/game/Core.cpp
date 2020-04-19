@@ -27,9 +27,9 @@ void Core::init(const CoreInitInfo &initInfo) {
     diffuseProgram.shader = initInfo.diffuseShader;
     diffuseProgram.models = initInfo.diffuseModels;
 
-    singleColorShader = initInfo.singleColorShader;
-    singleColorShader.useShader();
-    singleColorShader.setVec4("color", modelHighlight.highlightColor);
+    modelHighlight.shader = initInfo.singleColorShader;
+    modelHighlight.shader.useShader();
+    modelHighlight.clear();
 
     skyBoxShader = initInfo.cubemapShader;
     skyBox = Cubemap(initInfo.cubemapFaces);
@@ -91,8 +91,7 @@ void Core::draw() {
 
     if (diffuseProgram.models != nullptr) {
         if (!modelHighlight.selected) {
-            modelHighlight.t = FAR_VIEW;
-            modelHighlight.model = nullptr;
+            modelHighlight.clear();
 
             Ray cameraCenterRay = camera.generateRay(cursor.xpos / windowExtent.width,
                                                      (windowExtent.height - cursor.ypos) / windowExtent.height);
@@ -117,29 +116,35 @@ void Core::draw() {
     //Overlay
     overlay.prepare();
 
-    overlay.drawModelsList(&options.overlay.drawModelsList, overlayModels, [=](size_t selected) {
-        diffuseProgram.models->emplace_back();
-        auto &model = (*diffuseProgram.models)[diffuseProgram.models->size() - 1];
-        Model::createFromPath(&model, overlayModels[selected]);
-    });
+    if (options.overlay.drawModelsListWindow) {
+        overlay.drawModelsList(&options.overlay.drawModelsListWindow, overlayModels, [=](size_t selected) {
+            diffuseProgram.models->emplace_back();
+            auto &model = (*diffuseProgram.models)[diffuseProgram.models->size() - 1];
+            Model::ModelHandler::loadFromPath(&model, overlayModels[selected]);
+        });
+    }
 
-    if (modelHighlight.model != nullptr) {
+    if (modelHighlight.highlighted()) {
         glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
         glStencilMask(0x00);
         glDisable(GL_DEPTH_TEST);
 
-        singleColorShader.useShader();
-        singleColorShader.setMat4("camera", camera.getViewProjectionMatrix());
+        modelHighlight.shader.useShader();
+        modelHighlight.shader.setMat4("camera", camera.getViewProjectionMatrix());
 
-        if (modelHighlight.selected && options.overlay.drawEditModel) {
-            modelHighlight.model->createEditOverlay(&options.overlay.drawEditModel);
+        if (modelHighlight.selected && options.overlay.drawEditModelWindow) {
+            modelHighlight.model->createEditOverlay(&options.overlay.drawEditModelWindow);
         }
 
-        modelHighlight.model->drawHighlighted(singleColorShader);
+        modelHighlight.model->drawHighlighted(modelHighlight.shader);
     }
 
     if (options.overlay.drawDemoWindow) {
         overlay.drawDemoWindow(&options.overlay.drawDemoWindow);
+    }
+
+    if (options.overlay.drawOptionsWindow) {
+        drawOptionsWindow(&options.overlay.drawOptionsWindow);
     }
 
     overlay.draw();
@@ -218,4 +223,23 @@ void Core::calculateFrameTiming() {
             currentTime - frameTiming.prevTime).count();
 
     frameTiming.prevTime = currentTime;
+}
+
+void Core::drawOptionsWindow(bool *p_open) {
+    ImGui::SetNextWindowSize(ImVec2(300, 300), ImGuiCond_FirstUseEver);
+
+    if (ImGui::Begin("Options", p_open, ImGuiWindowFlags_MenuBar)) {
+        ImGui::BeginChild("Scene", ImVec2(300, 100), true);
+        ImGui::Checkbox("Scene Update", &options.scene.update);
+        ImGui::EndChild();
+
+        ImGui::BeginChild("Overlay", ImVec2(300, 100), true);
+        ImGui::Checkbox("Draw Models List", &options.overlay.drawModelsListWindow);
+        ImGui::Checkbox("Draw Demo", &options.overlay.drawDemoWindow);
+        ImGui::Checkbox("Draw Options", &options.overlay.drawOptionsWindow);
+        ImGui::Checkbox("Draw Edit Model", &options.overlay.drawEditModelWindow);
+        ImGui::EndChild();
+    }
+
+    ImGui::End();
 }

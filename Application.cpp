@@ -42,19 +42,20 @@ void Application::loadModels() {
     std::fstream istream(MODELS_INPUT_PATH);
 
     std::string name;
-    float x, y, z, sx, sy, sz;
+    float x, y, z, sx, sy, sz, yaw, pitch, roll;
     int num;
     istream >> num;
     for (size_t i = 0; i < num; i++) {
 
-        istream >> name >> x >> y >> z >> sx >> sy >> sz;
+        istream >> name >> x >> y >> z >> sx >> sy >> sz >> roll >> yaw >> pitch;
 
         models.emplace_back();
         auto &model = models[models.size() - 1];
-        Model::createFromPath(&model, name);
+        Model::ModelHandler::loadFromPath(&model, name);
 
         model.translate({x, y, z});
         model.scale({sx, sy, sz});
+        model.rotate(roll, yaw, pitch);
     }
 }
 

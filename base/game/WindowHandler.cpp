@@ -29,8 +29,7 @@ void Core::WindowHandler::mouseButtonCallback(GLFWwindow *window, int button, in
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         if (!app->options.scene.update) {
             if (!app->modelHighlight.selected && app->modelHighlight.highlighted()) {
-                app->singleColorShader.setVec4("color", app->modelHighlight.selectionColor);
-                app->modelHighlight.selected = true;
+                app->modelHighlight.select(app->modelHighlight.model);
             } else if (app->modelHighlight.selected) {
                 Ray ray = app->camera.generateRay(app->cursor.xpos / app->windowExtent.width,
                                                   (app->windowExtent.height - app->cursor.ypos) /
@@ -39,8 +38,7 @@ void Core::WindowHandler::mouseButtonCallback(GLFWwindow *window, int button, in
                 IntersectionRecord record = {};
 
                 if (app->modelHighlight.model->intersect(&record, ray, FAR_VIEW)) {
-                    app->modelHighlight.selected = false;
-                    app->modelHighlight.model = nullptr;
+                    app->modelHighlight.clear();
                 }
             }
         }
@@ -68,7 +66,7 @@ void Core::WindowHandler::keyCallback(GLFWwindow *window, int key, int scancode,
         std::ofstream ostream(MODELS_INPUT_PATH);
         ostream << app->diffuseProgram.models->size() << std::endl;
         for (const auto &model: *app->diffuseProgram.models) {
-            ostream << model.dump();
+            ostream << model.dump() << std::endl;
         }
     } else if (key == GLFW_KEY_R && action == GLFW_RELEASE) {
         if (app->modelHighlight.selected) {
@@ -80,6 +78,8 @@ void Core::WindowHandler::keyCallback(GLFWwindow *window, int key, int scancode,
                 }
             }
         }
+    } else if (key == GLFW_KEY_T && action == GLFW_RELEASE) {
+        app->options.overlay.drawOptionsWindow = !app->options.overlay.drawOptionsWindow;
     }
 }
 

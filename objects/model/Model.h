@@ -13,6 +13,8 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 #include "Texture.h"
 #include "Mesh.h"
@@ -25,15 +27,33 @@
 
 class Model {
 public:
+    class ModelHandler {
+    public:
+        ModelHandler(Model *_model);
+
+        static void loadFromPath(Model *model, const std::string &name);
+
+    private:
+        Model *model;
+
+        void processMesh(Mesh *mesh, aiMesh *aiMesh, const aiScene *aiScene);
+
+        void processNode(aiNode *aiNode, const aiScene *aiScene);
+
+        void loadTextures(std::vector<Texture> *pTextures, aiMaterial *pMat, aiTextureType aiType, Texture::Type type);
+
+        uint loadTextureFromFile(const std::string &path);
+    };
+
     static int totalCreation;
     int id;
     std::set<Texture> textures;
 
     std::string directory;
 
-    Model() { id = totalCreation++; }
-
-    static void createFromPath(Model *model, const std::string &name);
+    Model() : modelHandler(this) {
+        id = totalCreation++;
+    }
 
     void draw(const Shader &shader) const;
 
@@ -41,7 +61,7 @@ public:
 
     bool intersect(IntersectionRecord *record, const Ray &ray, const float &tBest);
 
-    void rotate(const float &dx, const float &dy);
+    void rotate(const float &dx, const float &dy, const float &dz);
 
     void translate(const glm::vec3 &direction);
 
@@ -54,26 +74,26 @@ public:
     std::string dump() const;
 
 private:
-    glm::mat3 xOrientation = {};
-    glm::mat3 yOrientation = {};
+    ModelHandler modelHandler;
+
+    glm::mat4 xOrientation = {};
+    glm::mat4 yOrientation = {};
+    glm::mat4 zOrientation = {};
 
     glm::vec3 position = {0, 0, 0};
     glm::vec3 size = {1, 1, 1};
 
-    glm::vec3 collusionBox[2];
-
+    float roll = 0;
     float yaw = 0;
     float pitch = 0;
 
+    std::array<glm::vec3, 2> collisionBox = {glm::vec3(0, 0, 0),
+                                             glm::vec3(0,  0,  0)};
+
     std::vector<Mesh> meshes;
 
-    void processNode(aiNode *pNode, const aiScene *pScene);
 
-    void processMesh(aiMesh *pMesh, const aiScene *pScene);
-
-    void loadTextures(std::vector<Texture> *pTextures, aiMaterial *pMat, aiTextureType aiType, Texture::Type type);
-
-    static uint loadTextureFromFile(const std::string &path);
+    static glm::fquat quaternionRotation(const glm::fquat &quat, glm::vec3 axis, const float &rad);
 };
 
 

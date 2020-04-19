@@ -54,12 +54,14 @@ private:
     };
 
     struct OverlayOptions {
-        bool drawModelsList = true;
+        bool drawModelsListWindow = true;
         bool drawDemoWindow = false;
-        bool drawEditModel = true;
+        bool drawEditModelWindow = true;
+        bool drawOptionsWindow = true;
     };
 
     struct {
+        Shader shader;
         Model *model = nullptr;
         bool selected = false;
         float t;
@@ -68,9 +70,17 @@ private:
 
         bool highlighted() { return model != nullptr; };
 
+        void select(Model *_model) {
+            model = _model;
+            shader.setVec4("color", selectionColor);
+            selected = true;
+        }
+
         void clear() {
             model = nullptr;
             selected = false;
+            t = FAR_VIEW;
+            shader.setVec4("color", highlightColor);
         }
     } modelHighlight;
 
@@ -109,7 +119,7 @@ private:
 
     Program diffuseProgram;
 
-    Shader singleColorShader;
+
     Shader skyBoxShader;
     Cubemap skyBox;
 
@@ -120,7 +130,6 @@ private:
     void findAllModelsInPath();
 
     void draw();
-
 
 
     void updateScene();
@@ -134,6 +143,8 @@ private:
     void processKeyInputs();
 
     void calculateFrameTiming();
+
+    void drawOptionsWindow(bool *p_open);
 };
 
 
