@@ -26,6 +26,7 @@ void Mesh::draw(const Shader &shader) const {
 }
 
 void Mesh::build() {
+
     glGenVertexArrays(1, &VAO);
     uint genBuffers[2];
     glGenBuffers(2, genBuffers);

@@ -27,6 +27,8 @@ void Core::init(const CoreInitInfo &initInfo) {
     diffuseProgram.shader = initInfo.diffuseShader;
     diffuseProgram.models = initInfo.diffuseModels;
 
+    bezierModels = initInfo.bezierModels;
+
     modelHighlight.shader = initInfo.singleColorShader;
     modelHighlight.shader.useShader();
     modelHighlight.clear();
@@ -94,13 +96,14 @@ void Core::draw() {
             modelHighlight.clear();
 
             Ray ray = camera.generateRay(cursor.xpos / windowExtent.width,
-                                                     (windowExtent.height - cursor.ypos) / windowExtent.height);
+                                         (windowExtent.height - cursor.ypos) / windowExtent.height);
             for (auto &model: *diffuseProgram.models) {
                 checkSelection(model, ray);
             }
         }
 
         for (auto &model: *diffuseProgram.models) {
+            // TODO Remove condition
             if (modelHighlight.model == &model) {
 //                glStencilMask(0xFF);
 
@@ -110,6 +113,12 @@ void Core::draw() {
             } else {
                 model.draw(diffuseProgram.shader);
             }
+        }
+    }
+
+    if (bezierModels != nullptr) {
+        for (auto &model: *bezierModels) {
+            model.draw(diffuseProgram.shader);
         }
     }
 

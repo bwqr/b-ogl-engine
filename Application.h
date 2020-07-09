@@ -17,7 +17,11 @@ private:
 
     std::vector<Model> models;
 
+    std::vector<Bezier> bezierModels;
+
     void loadModels();
+
+    void loadBezierModels();
 };
 
 

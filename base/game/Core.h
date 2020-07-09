@@ -12,11 +12,13 @@
 #include "../../objects/model/Cubemap.h"
 #include "../struct/IntersectionRecord.h"
 #include "../overlay/ImGuiOverlay.h"
+#include "../../objects/model/Bezier.h"
 
 struct CoreInitInfo {
     GLFWWindowManager windowManager;
     Shader diffuseShader;
     std::vector<Model> *diffuseModels;
+    std::vector<Bezier> *bezierModels;
     Shader singleColorShader;
     Shader cubemapShader;
     std::array<std::string, 6> cubemapFaces;
@@ -119,6 +121,7 @@ private:
 
     Program diffuseProgram;
 
+    std::vector<Bezier> *bezierModels;
 
     Shader skyBoxShader;
     Cubemap skyBox;

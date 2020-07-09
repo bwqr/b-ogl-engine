@@ -12,13 +12,11 @@ void Core::WindowHandler::cursorPosCallback(GLFWwindow *window, double xpos, dou
     cursor.ypos = ypos;
 
     if (app->options.scene.update) {
-//        auto prevOrientedViewVector = app->camera.orientedViewPlaneVector;
-
         app->camera.rotate(cursor.dx / app->windowExtent.width, cursor.dy / app->windowExtent.height);
+    }
 
-//        if (app->options.highlightModelSelect && app->highlightModel != nullptr) {
-//            app->highlightModel->translate(app->camera.orientedViewPlaneVector - prevOrientedViewVector);
-//        }
+    if (app->modelHighlight.selected && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        app->modelHighlight.model->translate({cursor.dx, cursor.dy, 0});
     }
 }
 
@@ -80,6 +78,14 @@ void Core::WindowHandler::keyCallback(GLFWwindow *window, int key, int scancode,
         }
     } else if (key == GLFW_KEY_T && action == GLFW_RELEASE) {
         app->options.overlay.drawOptionsWindow = !app->options.overlay.drawOptionsWindow;
+    } else if (key == GLFW_KEY_UP && action == GLFW_RELEASE) {
+        for (auto &model: *app->bezierModels) {
+            model.increaseResolution();
+        }
+    } else if (key == GLFW_KEY_DOWN && action == GLFW_RELEASE) {
+        for (auto &model: *app->bezierModels) {
+            model.decreaseResolution();
+        }
     }
 }
 

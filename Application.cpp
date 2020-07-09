@@ -11,6 +11,8 @@ Application::Application() {
     coreInitInfo.diffuseShader = Shader(SHADERS_DIR + "simpleDiffuse.vert", SHADERS_DIR + "simpleDiffuse.frag");
     coreInitInfo.diffuseModels = &models;
 
+    coreInitInfo.bezierModels = &bezierModels;
+
     coreInitInfo.cubemapShader = Shader(SHADERS_DIR + "scene.vert", SHADERS_DIR + "scene.frag");
 
     coreInitInfo.singleColorShader = Shader(SHADERS_DIR + "debug.vert", SHADERS_DIR + "debug.frag");
@@ -27,6 +29,8 @@ Application::Application() {
     gameCore.init(coreInitInfo);
 
     loadModels();
+
+    loadBezierModels();
 }
 
 Application::~Application() {
@@ -40,6 +44,11 @@ void Application::start() {
 
 void Application::loadModels() {
     std::fstream istream(MODELS_INPUT_PATH);
+
+    if (!istream.is_open()) {
+        Logger::error("model input file cannot be open", Logger::MODEL_LOAD_FAILED);
+        return;
+    }
 
     std::string name;
     float x, y, z, sx, sy, sz, yaw, pitch, roll;
@@ -57,5 +66,18 @@ void Application::loadModels() {
         model.scale({sx, sy, sz});
         model.rotate(roll, yaw, pitch);
     }
+}
+
+void Application::loadBezierModels() {
+    // Just put one model for teapot
+    bezierModels.emplace_back();
+    auto &model = bezierModels[bezierModels.size() - 1];
+    // Default Resolution is set to 4x4
+    model.setResolution({10, 10});
+    model.build();
+
+    model.translate({0, 0, 0});
+    model.scale({.2, .2, .2});
+    model.rotate(-90, 0, 0);
 }
 
