@@ -35,7 +35,7 @@ public:
 
     void setCursorPosCallback(void *application, void *callback) override;
 
-    void setMouseButtonCallback(void *application, void *callback);
+    void setMouseButtonCallback(void *application, void *callback) override;
 
     void getCursorPos(double *xpos, double *ypos) override;
 

@@ -26,8 +26,9 @@ visual/textures
 io
 
 #thirdparty
-thirdparty/stb
-thirdparty/imgui
+#thirdparty/stb
+#thirdparty/imgui
+#thirdparty/glad
 imgui.ini
 
 #macOS

@@ -11,19 +11,17 @@ file(GLOB BASE_SRC "base/game/*.h" "base/game/*.cpp" "base/gl/*.h" "base/gl/*.cp
         "*.h" "*.cpp" "objects/*.cpp" "objects/*.h" "objects/model/*.h" "objects/model/*.cpp" "base/overlay/*.h" "base/overlay/*.cpp"
         )
 
-file(GLOB THIRDPARTY_SRC "thirdparty/stb/stb_image.h" "thirdparty/imgui/*.h" "thirdparty/imgui/*.cpp")
+file(GLOB THIRDPARTY_SRC "thirdparty/stb/stb_image.h" "thirdparty/imgui/*.h" "thirdparty/imgui/*.cpp" "thirdparty/glad/*.h" "thirdparty/glad/*.c")
 
 find_package(OpenGL)
 find_package(glfw)
 find_package(assimp)
 
-find_library(glad NAMES libglad.so libglad PATHS /usr/lib)
 find_library(dl NAMES libdl.so libdl PATHS /usr/lib)
 
-include_directories(thirdparty/imgui)
-include_directories(thirdparty/stb)
+include_directories(thirdparty)
 
-add_executable(b-ogl-engine ${BASE_SRC} ${THIRDPARTY_SRC})
+add_executable(b-ogl-engine ${BASE_SRC} ${THIRDPARTY_SRC} thirdparty/stb/stb_image.h)
 target_link_libraries(b-ogl-engine OpenGL)
 target_link_libraries(b-ogl-engine glfw)
 target_link_libraries(b-ogl-engine assimp)

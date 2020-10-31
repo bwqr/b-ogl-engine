@@ -4,7 +4,7 @@
 #include <array>
 #include <string>
 #include <glad/glad.h>
-#include "../../thirdparty/stb/stb_image.h"
+#include "stb/stb_image.h"
 #include "../../base/game/Logger.h"
 #include "Texture.h"
 #include "../../base/gl/Shader.h"

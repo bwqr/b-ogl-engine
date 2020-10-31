@@ -11,7 +11,6 @@ void Core::init(const CoreInitInfo &initInfo) {
     initialized = true;
 
     //WindowManager configuration
-
     windowManager = initInfo.windowManager;
 
     windowManager.setResizeCallback(this, (void *) WindowHandler::resizeCallback);
@@ -20,10 +19,10 @@ void Core::init(const CoreInitInfo &initInfo) {
     windowManager.setCursorPosCallback(this, (void *) WindowHandler::cursorPosCallback);
     windowManager.setMouseButtonCallback(this, (void *) WindowHandler::mouseButtonCallback);
 
+    // Camera initialization
     setupCamera();
 
     //Programs configuration
-
     diffuseProgram.shader = initInfo.diffuseShader;
     diffuseProgram.models = initInfo.diffuseModels;
 
@@ -35,7 +34,6 @@ void Core::init(const CoreInitInfo &initInfo) {
     skyBox = Cubemap(initInfo.cubemapFaces);
 
     //GL configuration
-
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -94,7 +92,7 @@ void Core::draw() {
             modelHighlight.clear();
 
             Ray ray = camera.generateRay(cursor.xpos / windowExtent.width,
-                                                     (windowExtent.height - cursor.ypos) / windowExtent.height);
+                                         (windowExtent.height - cursor.ypos) / windowExtent.height);
             for (auto &model: *diffuseProgram.models) {
                 checkSelection(model, ray);
             }
